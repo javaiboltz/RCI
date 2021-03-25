@@ -1,1 +1,157 @@
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <string.h>
+#include <unistd.h>
+#include <stdio.h>
+
+int countWords(char *str);
+
+int main(int argc, char** argv)
+{
+char buffer[50]="", net[20]="", id[20]="", bootIP[20]="", bootTCP[20]="",get[20]="",*token;
+char *user_id, *user_port, *server_id, *server_port, object_header[20]="",*name;
+int nwords=0,first_interaction=0,flag1=0,flag2=0,flag3=0,free_flag=0,join_check=0;
+
+  if (argc == 5){  // command line
+    user_id=(char*)malloc(strlen(argv[1])*sizeof(char));
+    user_port=(char*)malloc(strlen(argv[2])*sizeof(char));//alocar memoria para os parametros da linha de comandos
+    server_id=(char*)malloc(strlen(argv[3])*sizeof(char));
+    server_port=(char*)malloc(strlen(argv[4])*sizeof(char));
+    strcpy(user_id, argv[1]);
+    strcpy(user_port, argv[2]);
+    strcpy(server_id, argv[3]);
+    strcpy(server_port, argv[4]);
+    printf("%s\n",user_id);
+    printf("%s\n",user_port);
+    printf("%s\n",server_id);
+    printf("%s\n",server_port);
+  }
+  else{
+    printf("wrong number of arguments\n");
+    exit(1);
+  }
+
+  printf("Input correct commands\n");
+  while(1)
+  {
+    if(fgets(buffer,50, stdin)==NULL){
+      printf("erro fgets\n");
+      exit(1);
+    }
+
+    nwords=countWords(buffer);//funcao que conta o numero de palavras no buffer
+
+    buffer[strcspn(buffer, "\n")] = 0;//tirar o /n do fgets
+
+    token=strtok(buffer," ");//funcao token que corta toda a string em palavras unicas
+
+    if (strcmp(buffer, "leave") == 0){
+      printf("saida do no da rede\n");
+    // saida do no da rede
+    }
+    else if (strcmp(buffer, "exit") == 0){
+      printf("xau\n");
+      free(user_id);free(user_port);free(server_id);free(server_port);//libertar memoria
+      if(free_flag==1)free(name);
+      break;
+    }
+    else if (strcmp(buffer, "st") == 0){
+      printf("show topology\n");
+    }
+    else if (strcmp(buffer, "sr") == 0){
+      printf("show routing\n");
+    }
+    else if (strcmp(buffer, "sc") == 0){
+      printf("show cache\n");
+    }
+    else{
+      while (token!=NULL) { //ciclo while q vai decompondo o buffer em palavras unicas
+        //printf("%s\n",token);
+        if(strcmp(token,"create")==0 && first_interaction==0){
+          flag1=1;
+          first_interaction=1;
+          strcpy(object_header,"");
+          if(join_check==1)strcpy(object_header,id);// so faz o create se ja tivermos dado join no servidor
+          free(name);
+        }
+        else if(strcmp(token,"get")==0 && first_interaction==0){
+          flag2=1;
+          first_interaction=1;
+        }
+        else if(strcmp(token,"join")==0 && first_interaction==0){
+          flag3=1;
+          first_interaction=1;
+        }
+        else if(flag1==1 && nwords==2 && join_check==1){
+          //strcpy(subname,token);
+          strcat(object_header,".");//fazer o id.
+          strcat(object_header,token);//criar o nome
+          name=(char*)malloc(strlen(object_header)*sizeof(char));//ATENCAO AO DOUBLE FREE TRATAR DISTO!!!
+          strcpy(name,object_header);
+          printf("%s -name\n",name);
+          first_interaction=0;//condicao final para o create - reiniciar o cilco while
+          flag1=0;
+          free_flag=1;
+        }
+        else if(flag2==1 && nwords==2){
+          strcpy(get,token);
+          printf("%s -get\n",get);
+          first_interaction=0;//condicao final para o get - reiniciar o cilco while
+          flag2=0;
+        }
+        else if(flag3==1 && (nwords==3 || nwords==5)){
+          strcpy(net,token);
+          printf("%s -net\n",net);
+          flag3=2;
+        }
+        else if(flag3==2 && (nwords==3 || nwords==5)){
+          strcpy(id,token);
+          printf("%s -id\n",id);
+          flag3=3;
+          join_check=1;
+          if(nwords!=5){
+            first_interaction=0;//condicao final para o join - reiniciar o cilco while - caso join tenha apenas 2 inputs
+          }
+        }
+        else if(flag3==3 && nwords==5){
+          strcpy(bootIP,token);
+          printf("%s -bootIP\n",bootIP);
+          flag3=4;
+        }
+        else if(flag3==4){
+          strcpy(bootTCP,token);
+          printf("%s -bootTCP\n",bootTCP);
+          first_interaction=0;//condicao final para o join - reiniciar o cilco while
+          join_check=1;
+          flag3=0;
+        }
+        else {
+          printf("wrong command\n");
+          first_interaction=0;
+        }
+
+        token=strtok(NULL," ");
+
+      }
+    }
+
+  }
+}
+
+int countWords(char *str){
+  int i = 0,wrd = 1;
+
+  /* loop till end of string */
+  while(str[i]!='\0'){
+      /* check whether the current character is white space or new line or tab character*/
+      if(str[i]==' ' || str[i]=='\n' || str[i]=='\t')
+      {
+          wrd++;
+      }
+      i++;
+  }
+  return wrd-1;
+}
 
